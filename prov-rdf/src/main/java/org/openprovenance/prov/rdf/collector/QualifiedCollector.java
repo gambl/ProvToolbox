@@ -4,27 +4,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 import org.openprovenance.prov.rdf.Ontology;
-import org.openprovenance.prov.xml.ActedOnBehalfOf;
-import org.openprovenance.prov.xml.Attribute;
-import org.openprovenance.prov.xml.Identifiable;
+import org.openprovenance.prov.model.ActedOnBehalfOf;
+import org.openprovenance.prov.model.Attribute;
+import org.openprovenance.prov.model.DerivedByInsertionFrom;
+import org.openprovenance.prov.model.DerivedByRemovalFrom;
+import org.openprovenance.prov.model.Identifiable;
 import org.openprovenance.prov.xml.ProvFactory;
-import org.openprovenance.prov.xml.StatementOrBundle;
-import org.openprovenance.prov.xml.Used;
-import org.openprovenance.prov.xml.WasAssociatedWith;
-import org.openprovenance.prov.xml.WasAttributedTo;
-import org.openprovenance.prov.xml.WasDerivedFrom;
-import org.openprovenance.prov.xml.WasEndedBy;
-import org.openprovenance.prov.xml.WasGeneratedBy;
-import org.openprovenance.prov.xml.WasInfluencedBy;
-import org.openprovenance.prov.xml.WasInformedBy;
-import org.openprovenance.prov.xml.WasInvalidatedBy;
-import org.openprovenance.prov.xml.WasStartedBy;
+import org.openprovenance.prov.model.StatementOrBundle;
+import org.openprovenance.prov.model.Type;
+import org.openprovenance.prov.model.Used;
+import org.openprovenance.prov.model.ValueConverter;
+import org.openprovenance.prov.model.WasAssociatedWith;
+import org.openprovenance.prov.model.WasAttributedTo;
+import org.openprovenance.prov.model.WasDerivedFrom;
+import org.openprovenance.prov.model.WasEndedBy;
+import org.openprovenance.prov.model.WasGeneratedBy;
+import org.openprovenance.prov.model.WasInfluencedBy;
+import org.openprovenance.prov.model.WasInformedBy;
+import org.openprovenance.prov.model.WasInvalidatedBy;
+import org.openprovenance.prov.model.WasStartedBy;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
@@ -80,21 +85,7 @@ public class QualifiedCollector extends RdfCollector {
 		return output;
 	}
 
-	private List<QName> getObjects(QName context, QName subject, QName pred)
-	{
-		List<Statement> statements = collators.get(context).get(subject);
-		List<QName> objects = new ArrayList<QName>();
-		for (Statement statement : statements)
-		{
-			QName predQ = convertURIToQName(statement.getPredicate());
-			Value value = statement.getObject();
-			if (pred.equals(predQ) && value instanceof Resource)
-			{
-				objects.add(convertResourceToQName((Resource) value));
-			}
-		}
-		return objects;
-	}
+	
 
 	private List<QName> getSubjects(QName context, QName pred, QName object)
 	{
@@ -177,6 +168,12 @@ public class QualifiedCollector extends RdfCollector {
 					case INFLUENCE:
 						createInfluence(contextQ, qname);
 						break;
+					case INSERTION:
+						createInsertion(contextQ, qname);
+						break;
+					case REMOVAL:
+						createRemoval(contextQ,qname);
+						break;
 					default:
 						break;
 					}
@@ -184,6 +181,8 @@ public class QualifiedCollector extends RdfCollector {
 			}
 		}
 	}
+
+
 
 	@Override
 	public void endRDF()
@@ -195,7 +194,7 @@ public class QualifiedCollector extends RdfCollector {
 	private void nullifyBNodes()
 	{
 		for (StatementOrBundle sob : document
-				.getEntityAndActivityAndWasGeneratedBy())
+				.getStatementOrBundle())
 		{
 			if (sob instanceof Identifiable)
 			{
@@ -239,12 +238,14 @@ public class QualifiedCollector extends RdfCollector {
 	{
 		List<WasDerivedFrom> wdfs = createDerivation(contextQ, qname,
 				Ontology.QNAME_PROVO_qualifiedRevision);
-		Object q = pFactory.newQName("prov:Revision");
+		//QName q = pFactory.newQName("prov:Revision");
+		QName q = Ontology.QNAME_PROVO_Revision;
+		Type type=pFactory.newType(q, ValueConverter.QNAME_XSD_QNAME);
 		for (WasDerivedFrom wdf : wdfs)
 		{
-			if (!wdf.getType().contains(q))
+			if (!wdf.getType().contains(type))
 			{
-				wdf.getType().add(q);
+				wdf.getType().add(type);
 			}
 		}
 	}
@@ -253,12 +254,14 @@ public class QualifiedCollector extends RdfCollector {
 	{
 		List<WasDerivedFrom> wdfs = createDerivation(contextQ, qname,
 				Ontology.QNAME_PROVO_qualifiedQuotation);
-		Object q = pFactory.newQName("prov:Quotation");
+		//Object q = pFactory.newQName("prov:Quotation");
+		QName q = Ontology.QNAME_PROVO_Quotation;
+		Type type=pFactory.newType(q, ValueConverter.QNAME_XSD_QNAME);
 		for (WasDerivedFrom wdf : wdfs)
 		{
-			if (!wdf.getType().contains(q))
+			if (!wdf.getType().contains(type))
 			{
-				wdf.getType().add(q);
+				wdf.getType().add(type);
 			}
 		}
 	}
@@ -267,13 +270,15 @@ public class QualifiedCollector extends RdfCollector {
 	{
 		List<WasDerivedFrom> wdfs = createDerivation(context, qname,
 				Ontology.QNAME_PROVO_qualifiedPrimarySource);
-		Object q = pFactory.newQName("prov:PrimarySource");
+		//Object q = pFactory.newQName("prov:PrimarySource");
+		QName q = Ontology.QNAME_PROVO_PrimarySource;
+		Type type=pFactory.newType(q, ValueConverter.QNAME_XSD_QNAME);
 
 		for (WasDerivedFrom wdf : wdfs)
 		{
-			if (!wdf.getType().contains(q))
+			if (!wdf.getType().contains(type))
 			{
-				wdf.getType().add(q);
+				wdf.getType().add(type);
 			}
 		}
 	}
@@ -374,6 +379,67 @@ public class QualifiedCollector extends RdfCollector {
 			store(context, web);
 		}
 	}
+
+	private void createInsertion(QName context, QName qname)
+	{
+		List<QName> objectDictionaries = getObjects(context, qname,
+				Ontology.QNAME_PROVO_dictionary);
+		List<QName> pairs = getObjects(context, qname,
+				Ontology.QNAME_PROVO_insertedKeyEntityPair);
+		List<QName> subjectDictionaries = getSubjects(context,
+				Ontology.QNAME_PROVO_qualifiedInsertion, qname);
+
+		List<Attribute> attributes = collectAttributes(context, qname,
+				ProvType.INSERTION);
+
+		qname = getQualQName(qname);
+
+		List<List<?>> perms = permute(subjectDictionaries, objectDictionaries);
+		for (List<?> perm : perms)
+		{
+			DerivedByInsertionFrom dbif = pFactory.newDerivedByInsertionFrom(qname, 
+					(QName) perm.get(0),
+					(QName) perm.get(1),
+					createKeyEntityPairs(context, pairs), 
+					attributes);
+					
+			store(context, dbif);
+		}
+	}
+
+	
+	private void createRemoval(QName context, QName qname)
+	{
+		List<QName> objectDictionaries = getObjects(context, qname,
+				Ontology.QNAME_PROVO_dictionary);
+		List<Value> keys = getDataObjects(context, qname,
+				Ontology.QNAME_PROVO_removedKey);
+		List<QName> subjectDictionaries = getSubjects(context,
+				Ontology.QNAME_PROVO_qualifiedRemoval, qname);
+
+		List<Attribute> attributes = collectAttributes(context, qname,
+				ProvType.REMOVAL);
+
+		qname = getQualQName(qname);
+		
+		List<Object> theKeys=new LinkedList<Object>();
+		for (Value key: keys) {
+			theKeys.add(valueToObject(key));
+		}
+
+		List<List<?>> perms = permute(subjectDictionaries, objectDictionaries);
+		for (List<?> perm : perms)
+		{
+			DerivedByRemovalFrom dbif = pFactory.newDerivedByRemovalFrom(qname, 
+					(QName) perm.get(0),
+					(QName) perm.get(1),
+	                theKeys,
+					attributes);
+					
+			store(context, dbif);
+		}
+	}
+
 
 	private void createStart(QName context, QName qname)
 	{

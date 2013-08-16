@@ -5,8 +5,10 @@ import java.util.Collection;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.namespace.QName;
 
-@XmlJavaTypeAdapter(AnyAdapter.class)
-public class Attribute {
+
+// Adapter is declared globally in package-info.java
+//@XmlJavaTypeAdapter(AnyAdapter.class)
+public class Attribute implements org.openprovenance.prov.model.Attribute {
     
     public static QName provQName(String s) {
 	return new QName(NamespacePrefixMapper.PROV_NS, s, NamespacePrefixMapper.PROV_PREFIX);
@@ -53,6 +55,10 @@ public class Attribute {
      }
 
     
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getQName(org.openprovenance.prov.xml.Attribute.AttributeKind)
+     */
+    @Override
     public QName getQName(AttributeKind kind) {
 	switch (kind) {
 	case  PROV_TYPE: return PROV_TYPE_QNAME;
@@ -66,6 +72,10 @@ public class Attribute {
 	}
     }
     
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getAttributeKind(javax.xml.namespace.QName)
+     */
+    @Override
     public AttributeKind getAttributeKind(QName q) {
 	if (q.equals(PROV_TYPE_QNAME)) return AttributeKind.PROV_TYPE;
 	if (q.equals(PROV_LABEL_QNAME)) return AttributeKind.PROV_LABEL;
@@ -89,18 +99,34 @@ public class Attribute {
 	return false;
     }
 
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getElementName()
+     */
+    @Override
     public QName getElementName() {
 	return elementName;
     }
     
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getKind()
+     */
+    @Override
     public AttributeKind getKind() {
 	return kind;
     }
 
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getValue()
+     */
+    @Override
     public Object getValue() {
 	return val;
     }
 
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#getXsdType()
+     */
+    @Override
     public QName getXsdType() {
 	return xsdType;
     }
@@ -132,8 +158,11 @@ public class Attribute {
 		+ qname.getLocalPart();
     }
     
-    /** A method to generate the prov-n representation of an attribute  ex:attr="value" %% xsd:type */
+    /* (non-Javadoc)
+     * @see org.openprovenance.prov.xml.AttrIN#toNotationString()
+     */
     
+    @Override
     public String toNotationString() {
 	return qnameToString(elementName) + " = " + valueToNotationString(val, xsdType);
     }
@@ -154,8 +183,8 @@ public class Attribute {
      }
   
     
-    static public boolean hasType(QName type, Collection<Attribute> attributes) {
-    	for (Attribute attribute: attributes) {
+    static public boolean hasType(QName type, Collection<org.openprovenance.prov.model.Attribute> attributes) {
+    	for (org.openprovenance.prov.model.Attribute attribute: attributes) {
     		switch (attribute.getKind()) {
     			case PROV_TYPE :
     				if (attribute.getValue().equals(type)) {

@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -13,30 +14,32 @@ import java.util.logging.Logger;
 import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
+import org.openprovenance.prov.model.KeyQNamePair;
+import org.openprovenance.prov.model.URIWrapper;
 import org.openprovenance.prov.rdf.Ontology;
-import org.openprovenance.prov.xml.ActedOnBehalfOf;
-import org.openprovenance.prov.xml.HadMember;
-import org.openprovenance.prov.xml.AlternateOf;
-import org.openprovenance.prov.xml.Attribute;
-import org.openprovenance.prov.xml.Document;
-import org.openprovenance.prov.xml.InternationalizedString;
-import org.openprovenance.prov.xml.MentionOf;
-import org.openprovenance.prov.xml.NamedBundle;
-import org.openprovenance.prov.xml.NamespacePrefixMapper;
+import org.openprovenance.prov.model.ActedOnBehalfOf;
+import org.openprovenance.prov.model.DictionaryMembership;
+import org.openprovenance.prov.model.HadMember;
+import org.openprovenance.prov.model.AlternateOf;
+import org.openprovenance.prov.model.Attribute;
+import org.openprovenance.prov.model.Document;
+import org.openprovenance.prov.model.InternationalizedString;
+import org.openprovenance.prov.model.MentionOf;
+import org.openprovenance.prov.model.NamedBundle;
+import org.openprovenance.prov.model.NamespacePrefixMapper;
 import org.openprovenance.prov.xml.ProvFactory;
-import org.openprovenance.prov.xml.SpecializationOf;
-import org.openprovenance.prov.xml.URIWrapper;
-import org.openprovenance.prov.xml.Used;
-import org.openprovenance.prov.xml.ValueConverter;
-import org.openprovenance.prov.xml.WasAssociatedWith;
-import org.openprovenance.prov.xml.WasAttributedTo;
-import org.openprovenance.prov.xml.WasDerivedFrom;
-import org.openprovenance.prov.xml.WasEndedBy;
-import org.openprovenance.prov.xml.WasGeneratedBy;
-import org.openprovenance.prov.xml.WasInfluencedBy;
-import org.openprovenance.prov.xml.WasInformedBy;
-import org.openprovenance.prov.xml.WasInvalidatedBy;
-import org.openprovenance.prov.xml.WasStartedBy;
+import org.openprovenance.prov.model.SpecializationOf;
+import org.openprovenance.prov.model.Used;
+import org.openprovenance.prov.model.ValueConverter;
+import org.openprovenance.prov.model.WasAssociatedWith;
+import org.openprovenance.prov.model.WasAttributedTo;
+import org.openprovenance.prov.model.WasDerivedFrom;
+import org.openprovenance.prov.model.WasEndedBy;
+import org.openprovenance.prov.model.WasGeneratedBy;
+import org.openprovenance.prov.model.WasInfluencedBy;
+import org.openprovenance.prov.model.WasInformedBy;
+import org.openprovenance.prov.model.WasInvalidatedBy;
+import org.openprovenance.prov.model.WasStartedBy;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
@@ -71,7 +74,10 @@ public class RdfCollector extends RDFHandlerBase {
 			Ontology.QNAME_PROVO_qualifiedQuotation,
 			Ontology.QNAME_PROVO_qualifiedRevision,
 			Ontology.QNAME_PROVO_qualifiedStart,
-			Ontology.QNAME_PROVO_qualifiedUsage
+			Ontology.QNAME_PROVO_qualifiedUsage,
+			Ontology.QNAME_PROVO_qualifiedInsertion,
+			Ontology.QNAME_PROVO_qualifiedRemoval
+
 	});
 
 	private List<QName> DM_TYPES = Arrays.asList(new QName[] {
@@ -80,7 +86,13 @@ public class RdfCollector extends RDFHandlerBase {
 			Ontology.QNAME_PROVO_Organization, Ontology.QNAME_PROVO_Person,
 			Ontology.QNAME_PROVO_Plan, Ontology.QNAME_PROVO_PrimarySource,
 			Ontology.QNAME_PROVO_Quotation, Ontology.QNAME_PROVO_Revision,
-			Ontology.QNAME_PROVO_SoftwareAgent });
+			Ontology.QNAME_PROVO_SoftwareAgent,
+			Ontology.QNAME_PROVDC_Contributor,
+			Ontology.QNAME_PROVO_Dictionary,
+			Ontology.QNAME_PROVO_EmptyDictionary
+
+
+			});
 
 	public RdfCollector(ProvFactory pFactory)
 	{
@@ -113,10 +125,10 @@ public class RdfCollector extends RDFHandlerBase {
 	}
 
 	protected void store(QName context,
-			org.openprovenance.prov.xml.Relation0 relation0)
+			org.openprovenance.prov.model.Relation0 relation0)
 	{
 		getBundleHolder(context).addStatement(
-				(org.openprovenance.prov.xml.Statement) relation0);
+				(org.openprovenance.prov.model.Statement) relation0);
 	}
 
 	/* Utility functions */
@@ -221,7 +233,7 @@ public class RdfCollector extends RDFHandlerBase {
 				}
 				ProvType provType = ProvType
 						.lookup(convertURIToQName((URI) value));
-				explicitOptions.add(provType);
+				if (provType!=null) explicitOptions.add(provType);
 			}
 		}
 
@@ -428,28 +440,28 @@ public class RdfCollector extends RDFHandlerBase {
 		if (bundles.containsKey(new QName("")))
 		{
 			BundleHolder defaultBundle = bundles.get(new QName(""));
-			for (org.openprovenance.prov.xml.Activity activity : defaultBundle
+			for (org.openprovenance.prov.model.Activity activity : defaultBundle
 					.getActivities())
 			{
-				document.getEntityAndActivityAndWasGeneratedBy().add(activity);
+				document.getStatementOrBundle().add(activity);
 			}
 
-			for (org.openprovenance.prov.xml.Agent agent : defaultBundle
+			for (org.openprovenance.prov.model.Agent agent : defaultBundle
 					.getAgents())
 			{
-				document.getEntityAndActivityAndWasGeneratedBy().add(agent);
+				document.getStatementOrBundle().add(agent);
 			}
 
-			for (org.openprovenance.prov.xml.Entity entity : defaultBundle
+			for (org.openprovenance.prov.model.Entity entity : defaultBundle
 					.getEntities())
 			{
-				document.getEntityAndActivityAndWasGeneratedBy().add(entity);
+				document.getStatementOrBundle().add(entity);
 			}
 
-			for (org.openprovenance.prov.xml.Statement statement : defaultBundle
+			for (org.openprovenance.prov.model.Statement statement : defaultBundle
 					.getStatements())
 			{
-				document.getEntityAndActivityAndWasGeneratedBy().add(statement);
+				document.getStatementOrBundle().add(statement);
 			}
 		}
 
@@ -460,13 +472,13 @@ public class RdfCollector extends RDFHandlerBase {
 				continue;
 			}
 			BundleHolder bundleHolder = bundles.get(key);
-			Collection<org.openprovenance.prov.xml.Statement> statements = new ArrayList<org.openprovenance.prov.xml.Statement>();
+			Collection<org.openprovenance.prov.model.Statement> statements = new ArrayList<org.openprovenance.prov.model.Statement>();
 			statements.addAll(bundleHolder.getActivities());
 			statements.addAll(bundleHolder.getEntities());
 			statements.addAll(bundleHolder.getAgents());
 			statements.addAll(bundleHolder.getStatements());
 			NamedBundle bundle = pFactory.newNamedBundle(key, null, statements);
-			document.getEntityAndActivityAndWasGeneratedBy().add(bundle);
+			document.getStatementOrBundle().add(bundle);
 		}
 
 	}
@@ -537,7 +549,7 @@ public class RdfCollector extends RDFHandlerBase {
 							} else
 							{
 								attributes.add(pFactory.newAttribute(
-										Attribute.PROV_TYPE_QNAME, typeQ,
+										org.openprovenance.prov.xml.Attribute.PROV_TYPE_QNAME, typeQ,
 										this.valueConverter));
 							}
 
@@ -546,7 +558,7 @@ public class RdfCollector extends RDFHandlerBase {
 
 							attributes
 									.add(pFactory.newAttribute(
-											Attribute.PROV_TYPE_QNAME,
+											org.openprovenance.prov.xml.Attribute.PROV_TYPE_QNAME,
 											decodeLiteral((Literal) statement
 													.getObject()),
 											this.valueConverter));
@@ -562,7 +574,7 @@ public class RdfCollector extends RDFHandlerBase {
 			if (predQ.equals(Ontology.QNAME_PROVO_hadRole))
 			{
 				String role = statement.getObject().stringValue();
-				attributes.add(pFactory.newAttribute(Attribute.PROV_ROLE_QNAME,
+				attributes.add(pFactory.newAttribute(org.openprovenance.prov.xml.Attribute.PROV_ROLE_QNAME,
 						role, this.valueConverter));
 			}
 
@@ -572,7 +584,7 @@ public class RdfCollector extends RDFHandlerBase {
 				if (obj != null)
 				{
 					attributes.add(pFactory.newAttribute(
-							Attribute.PROV_LOCATION_QNAME, obj,
+							org.openprovenance.prov.xml.Attribute.PROV_LOCATION_QNAME, obj,
 							this.valueConverter));
 				}
 			}
@@ -586,12 +598,12 @@ public class RdfCollector extends RDFHandlerBase {
 							.newInternationalizedString(lit.stringValue(), lit
 									.getLanguage().toUpperCase());
 					attributes.add(pFactory
-							.newAttribute(Attribute.PROV_LABEL_QNAME, is,
+							.newAttribute(org.openprovenance.prov.xml.Attribute.PROV_LABEL_QNAME, is,
 									this.valueConverter));
 				} else
 				{
 					attributes.add(pFactory.newAttribute(
-							Attribute.PROV_LABEL_QNAME, lit.stringValue(),
+							org.openprovenance.prov.xml.Attribute.PROV_LABEL_QNAME, lit.stringValue(),
 							this.valueConverter));
 				}
 			}
@@ -602,7 +614,7 @@ public class RdfCollector extends RDFHandlerBase {
 				{
 					Object resourceVal = convertResourceToQName((Resource) value);
 					attributes.add(pFactory.newAttribute(
-							Attribute.PROV_VALUE_QNAME, resourceVal,
+							org.openprovenance.prov.xml.Attribute.PROV_VALUE_QNAME, resourceVal,
 							this.valueConverter));
 				}
 			} else if (value instanceof Literal)
@@ -611,7 +623,7 @@ public class RdfCollector extends RDFHandlerBase {
 				{
 					Object literal = decodeLiteral((Literal) value);
 					attributes.add(pFactory.newAttribute(
-							Attribute.PROV_VALUE_QNAME, literal,
+							org.openprovenance.prov.xml.Attribute.PROV_VALUE_QNAME, literal,
 							this.valueConverter));
 				}
 			}
@@ -668,6 +680,8 @@ public class RdfCollector extends RDFHandlerBase {
 	private void handlePredicates(QName context, QName qname)
 	{
 		List<QName> members = new ArrayList<QName>();
+		List<QName> dictionaryMembers = new ArrayList<QName>();
+
 		List<Statement> statements = collators.get(context).get(qname);
 		for (Statement statement : statements)
 		{
@@ -814,6 +828,10 @@ public class RdfCollector extends RDFHandlerBase {
 				{
 					members.add(convertResourceToQName((Resource) (statement
 							.getObject())));
+				} else if (predQ.equals(Ontology.QNAME_PROVO_hadDictionaryMember))
+				{
+					dictionaryMembers.add(convertResourceToQName((Resource) (statement
+							.getObject())));
 				}
 			}
 		}
@@ -822,15 +840,72 @@ public class RdfCollector extends RDFHandlerBase {
 		{
 			HadMember hm = pFactory.newHadMember(qname, members);
 			store(context, hm);
+		}		
+		if (dictionaryMembers.size() > 0)
+		{
+			List<KeyQNamePair> pairs=
+			 createKeyEntityPairs( context, dictionaryMembers);
+			
+			DictionaryMembership hm = pFactory.newDictionaryMembership(qname, pairs);
+			store(context, hm);
 		}
 	}
+	
+	protected List<Value> getDataObjects(QName context, QName subject, QName pred)
+	{
+		List<Statement> statements = collators.get(context).get(subject);
+		List<Value> objects = new ArrayList<Value>();
+		for (Statement statement : statements)
+		{
+			QName predQ = convertURIToQName(statement.getPredicate());
+			Value value = statement.getObject();
+			if (pred.equals(predQ) && (!(value instanceof Resource)))
+			{
+				objects.add(value);
+			}
+		}
+		return objects;
+	}
+
+	protected List<KeyQNamePair> createKeyEntityPairs(QName context, List<QName> pairs) {
+		List<KeyQNamePair> result= new LinkedList<KeyQNamePair>();
+		for (QName pair: pairs) {
+			List<Value> keys = getDataObjects(context, pair,
+	                  Ontology.QNAME_PROVO_pairKey);  // key is data property!
+
+			List<QName> entities = getObjects(context, pair,
+	                  Ontology.QNAME_PROVO_pairEntity);
+			KeyQNamePair p=new KeyQNamePair();
+			if (!keys.isEmpty()) p.key=valueToObject(keys.get(0)); // we ignore the others
+			if (!entities.isEmpty()) p.name=entities.get(0); // we ignore the others
+		    result.add(p);
+		}
+		return result;
+	}
+
+	protected List<QName> getObjects(QName context, QName subject, QName pred)
+	{
+		List<Statement> statements = collators.get(context).get(subject);
+		List<QName> objects = new ArrayList<QName>();
+		for (Statement statement : statements)
+		{
+			QName predQ = convertURIToQName(statement.getPredicate());
+			Value value = statement.getObject();
+			if (pred.equals(predQ) && value instanceof Resource)
+			{
+				objects.add(convertResourceToQName((Resource) value));
+			}
+		}
+		return objects;
+	}
+
 
 	private void createEntity(QName context, QName qname)
 	{
 		List<Attribute> attributes = collectAttributes(context, qname,
 				ProvType.ENTITY);
 
-		org.openprovenance.prov.xml.Entity entity = pFactory.newEntity(qname,
+		org.openprovenance.prov.model.Entity entity = pFactory.newEntity(qname,
 				attributes);
 		getBundleHolder(context).store(entity);
 	}
@@ -840,7 +915,7 @@ public class RdfCollector extends RDFHandlerBase {
 		List<Attribute> attributes = collectAttributes(context, qname,
 				ProvType.AGENT);
 
-		org.openprovenance.prov.xml.Agent agent = pFactory.newAgent(qname,
+		org.openprovenance.prov.model.Agent agent = pFactory.newAgent(qname,
 				attributes);
 		getBundleHolder(context).store(agent);
 	}
@@ -872,7 +947,7 @@ public class RdfCollector extends RDFHandlerBase {
 			}
 		}
 
-		org.openprovenance.prov.xml.Activity activity = pFactory.newActivity(
+		org.openprovenance.prov.model.Activity activity = pFactory.newActivity(
 				qname, startTime, endTime, attributes);
 		getBundleHolder(context).store(activity);
 	}

@@ -1,19 +1,23 @@
 package org.openprovenance.prov.rdf;
 
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 
 import javax.xml.namespace.QName;
 
 import org.openprovenance.prov.xml.Attribute;
 import org.openprovenance.prov.xml.NamespacePrefixMapper;
 
+
 public class Ontology {
+
     public Ontology() {
 	initInfluenceTables();
 	initDomainTables();
-	initRangeTables();
+        initRangeTables();
+        initAttributeAsResourceTables();
     }
-
     public Hashtable<QName, QName> qualifiedInfluenceTable = new Hashtable<QName, QName>();
     public Hashtable<QName, QName> influencerTable = new Hashtable<QName, QName>();
     public Hashtable<QName, QName> unqualifiedTable = new Hashtable<QName, QName>();
@@ -23,9 +27,16 @@ public class Ontology {
     public Hashtable<QName, QName> domains = new Hashtable<QName, QName>();
     public Hashtable<QName, QName> ranges = new Hashtable<QName, QName>();
     
+    public Set<QName> asObjectProperty=new HashSet<QName>();
+    
     public static QName newProvQName(String local) {
 	return new QName(NamespacePrefixMapper.PROV_NS, local,
 			 NamespacePrefixMapper.PROV_PREFIX);
+    }
+
+    public static QName newBookQName(String local) {
+	return new QName(NamespacePrefixMapper.BOOK_NS, local,
+			 NamespacePrefixMapper.BOOK_PREFIX);
     }
 
     public static QName newRdfQName(String local) {
@@ -142,6 +153,9 @@ public class Ontology {
     public static QName QNAME_PROVO_ActivityInfluence = newProvQName("ActivityInfluence");
     public static QName QNAME_PROVO_AgentInfluence = newProvQName("AgentInfluence");
     
+    public static QName QNAME_PROVDC_Contributor = newProvQName("Contributor");
+
+    
     public static QName QNAME_RDF_TYPE = newRdfQName("type");
     public static QName QNAME_RDFS_LABEL = newRdfsQName("label");
     
@@ -163,6 +177,11 @@ public class Ontology {
 	public static QName QNAME_PROVO_KeyValuePair = newProvQName("KeyValuePair");
 	public static QName QNAME_PROVO_pairKey = newProvQName("pairKey");
 	public static QName QNAME_PROVO_pairEntity = newProvQName("pairEntity");
+
+    // prov book
+
+    public static QName QNAME_BK_topicIn = newBookQName("topicIn");
+
 
 	
     void initInfluenceTables() {
@@ -305,6 +324,9 @@ public class Ontology {
     	this.ranges.put(QNAME_PROVO_qualifiedRemoval, QNAME_PROVO_Removal);
     	this.ranges.put(QNAME_PROVO_derivedByRemoval, QNAME_PROVO_Dictionary);
     	this.ranges.put(QNAME_PROVO_insertedKeyEntityPair, QNAME_PROVO_KeyValuePair);
+        this.ranges.put(QNAME_BK_topicIn, QNAME_PROVO_Bundle);
+
+    	
     }
     
     void initDomainTables() {
@@ -373,6 +395,11 @@ public class Ontology {
     	this.domains.put(QNAME_PROVO_insertedKeyEntityPair, QNAME_PROVO_Insertion);
     	
     }
+    
+    void initAttributeAsResourceTables() {
+        asObjectProperty.add(QNAME_BK_topicIn);
+        asObjectProperty.add(QNAME_PROVO_atLocation);
+    }
 
     void activityInfluence(QName name) {
 	influencerTable.put(name, QNAME_PROVO_activity);
@@ -388,6 +415,8 @@ public class Ontology {
     void agentInfluence(QName name) {
 	influencerTable.put(name, QNAME_PROVO_agent);
     }
+    
+    
 
     public QName convertToRdf(QName qname) {
 	QName res = convertTable.get(qname);

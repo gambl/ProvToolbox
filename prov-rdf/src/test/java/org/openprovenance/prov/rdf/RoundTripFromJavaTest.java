@@ -4,8 +4,8 @@ import java.io.StringWriter;
 
 import javax.xml.bind.JAXBException;
 
-import org.openprovenance.prov.xml.Document;
-import org.openprovenance.prov.xml.HasExtensibility;
+import org.openprovenance.prov.model.Document;
+import org.openprovenance.prov.model.HasExtensibility;
 import org.openprovenance.prov.xml.ProvFactory;
 import org.openprovenance.prov.xml.ProvSerialiser;
 import org.openprovenance.prov.xml.UncheckedTestException;
@@ -75,16 +75,13 @@ public class RoundTripFromJavaTest extends
 		{
 			return false;
 		}
-		if (name.contains("dictionary")) {
-			return false;
-		}
-		
+	
 		return true;
 	}
 
 	final Utility u = new Utility();
 
-	private String dumpXML(ProvFactory pFactory, Document document)
+	private String dumpXML(org.openprovenance.prov.model.ProvFactory pFactory, Document document)
 			throws JAXBException
 	{
 
