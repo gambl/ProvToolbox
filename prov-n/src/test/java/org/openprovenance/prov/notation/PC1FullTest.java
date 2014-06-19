@@ -1,10 +1,9 @@
 package org.openprovenance.prov.notation;
 import java.io.File;
-import java.util.Hashtable;
 import junit.framework.TestCase;
 
+import org.openprovenance.prov.model.Namespace;
 import org.openprovenance.prov.xml.Document;
-import org.openprovenance.prov.xml.NamespacePrefixMapper;
 import org.openprovenance.prov.xml.ProvDeserialiser;
 import org.openprovenance.prov.xml.ProvSerialiser;
 import org.openprovenance.prov.xml.ProvFactory;
@@ -23,18 +22,9 @@ public class PC1FullTest
     
 
 
-    static final Hashtable<String,String> namespaces;
-
     
-    public static ProvFactory pFactory;
+    public static ProvFactory pFactory=new ProvFactory();
 
-    static {
-        namespaces=new Hashtable<String, String>();
-        namespaces.put("pc1",PC1_NS);
-        namespaces.put("xsd",NamespacePrefixMapper.XSD_NS);
-        namespaces.put("prim","http://openprovenance.org/primitives#");
-        pFactory=new ProvFactory(namespaces);
-    }
 
     /**
      * Create the test case
@@ -67,10 +57,12 @@ public class PC1FullTest
 
         ProvSerialiser serial=ProvSerialiser.getThreadProvSerialiser();
 
-        c.setNss(namespaces);
-        Document c2=(Document)u.convertJavaBeanToJavaBean(c);
-        c2.setNss(namespaces);
+        c.setNamespace(Namespace.gatherNamespaces(c));
 
+        Document c2=(Document)u.convertJavaBeanToJavaBean(c, pFactory);
+        c2.setNamespace(c.getNamespace());
+
+        Namespace.withThreadNamespace(c2.getNamespace());
         serial.serialiseDocument(new File("target/pc1-full-2.xml"),c2,true);
 
     }

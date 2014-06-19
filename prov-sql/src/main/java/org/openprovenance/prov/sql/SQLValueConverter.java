@@ -1,107 +1,114 @@
 package org.openprovenance.prov.sql;
-import  org.openprovenance.prov.xml.ValueConverter;
-import  org.openprovenance.prov.xml.ProvFactory;
+import org.openprovenance.prov.model.Name;
+import org.openprovenance.prov.model.QualifiedName;
 import javax.xml.datatype.XMLGregorianCalendar;
-import javax.xml.namespace.QName;
 
 public class SQLValueConverter {
-    static ValueConverter conv=new ValueConverter(new ProvFactory());
+    
+    static Name name=ProvFactory.getFactory().getName();
 
-    static public AValue convertToAValue(QName datatype, Object value) {
-	if (datatype.equals(ValueConverter.QNAME_XSD_STRING)) {
+    static public AValue convertToAValue(QualifiedName datatype, Object value) {
+	if (datatype.equals(name.XSD_STRING)) {
 	    AValue res=new AValue();
 	    res.setString((String) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_INT)) {
+	if (datatype.equals(name.XSD_INT)) {
 	    AValue res=new AValue();
-	    res.setInt((Integer) value);
+	    res.setLong(((Integer) value).longValue());
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_LONG)) {
+	if (datatype.equals(name.XSD_LONG)) {
 	    AValue res=new AValue();
 	    res.setLong((Long) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_SHORT)) {
+	if (datatype.equals(name.XSD_SHORT)) {
 	    AValue res=new AValue();
-	    res.setShort((Short) value);
+	    res.setLong(((Short) value).longValue());
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_DOUBLE)) {
+	if (datatype.equals(name.XSD_DOUBLE)) {
 	    AValue res=new AValue();
 	    res.setDouble((Double) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_FLOAT)) {
+	if (datatype.equals(name.XSD_FLOAT)) {
 	    AValue res=new AValue();
 	    res.setFloat((Float) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_DECIMAL)) {
+	if (datatype.equals(name.XSD_DECIMAL)) {
 	    AValue res=new AValue();
-	    res.setDecimal((java.math.BigDecimal) value);
+//	    res.setDecimal((java.math.BigDecimal) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_BOOLEAN)) {
+	if (datatype.equals(name.XSD_BOOLEAN)) {
 	    AValue res=new AValue();
-	    res.setBoolean((Boolean) value);
+//	    res.setBoolean((Boolean) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_BYTE)) {
+	if (datatype.equals(name.XSD_BYTE)) {
 	    AValue res=new AValue();
-	    res.setByte((Byte) value);
+	    res.setLong(((Byte) value).longValue());
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_UNSIGNED_INT)) {
+	if (datatype.equals(name.XSD_UNSIGNED_INT)) {
 	    AValue res=new AValue();
-	    res.setUnsignedInt((Long) value);
+	    res.setLong((Long) value);
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_UNSIGNED_SHORT)) {
+	if (datatype.equals(name.XSD_UNSIGNED_SHORT)) {
 	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_UNSIGNED_BYTE)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_UNSIGNED_LONG)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_INTEGER)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_NON_NEGATIVE_INTEGER)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_NON_POSITIVE_INTEGER)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_POSITIVE_INTEGER)) {
-	    AValue res=new AValue();
-	    throw new UnsupportedOperationException();
-	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_ANY_URI)) {
-	    AValue res=new AValue();
-	    res.setAnyURI( value.toString());
+	    //throw new UnsupportedOperationException();
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_QNAME)) {
+	if (datatype.equals(name.XSD_UNSIGNED_BYTE)) {
 	    AValue res=new AValue();
-	    res.setQname((QName) value);
+	    //throw new UnsupportedOperationException();
 	    return res;
 	}
-	if (datatype.equals(ValueConverter.QNAME_XSD_DATETIME)) {
+	if (datatype.equals(name.XSD_UNSIGNED_LONG)) {
+	    AValue res=new AValue();
+	    //res.setUnsignedInt((Long) value);
+	    return res;
+	}
+	if (datatype.equals(name.XSD_INTEGER)) {
+	    AValue res=new AValue();
+	    //throw new UnsupportedOperationException();
+	    return res;
+	}
+	if (datatype.equals(name.XSD_NON_NEGATIVE_INTEGER)) {
+	    AValue res=new AValue();
+	    //throw new UnsupportedOperationException();
+	    return res;
+	}
+	if (datatype.equals(name.XSD_NON_POSITIVE_INTEGER)) {
+	    AValue res=new AValue();
+	    //throw new UnsupportedOperationException();
+	    return res;
+	}
+	if (datatype.equals(name.XSD_POSITIVE_INTEGER)) {
+	    AValue res=new AValue();
+	    //throw new UnsupportedOperationException();
+	    return res;
+	}
+	if (datatype.equals(name.XSD_ANY_URI)) {
+	    AValue res=new AValue();
+//	    res.setAnyURI( value.toString());
+	    return res;
+	}
+	if (datatype.equals(name.XSD_QNAME)) {
+	    AValue res=new AValue();
+	    res.setQname((org.openprovenance.prov.sql.QualifiedName) value); 
+	    return res;
+	}
+	if (datatype.equals(name.XSD_DATETIME)) {
 	    AValue res=new AValue();
 	    res.setDateTime((XMLGregorianCalendar) value);
 	    return res;
 	}
-        if (datatype.equals(ValueConverter.QNAME_XSD_GYEAR)) {
+        if (datatype.equals(name.XSD_GYEAR)) {
 	    AValue res=new AValue();
 	    res.setGYear((XMLGregorianCalendar) value);
 	    return res;
@@ -119,29 +126,23 @@ public class SQLValueConverter {
 	    || (datatype.equals("xsd:hexBinary"))
 	    || (datatype.equals("xsd:base64Binary"))) {
 
-	    throw new UnsupportedOperationException(
-						    "KNOWN literal type but conversion not supported yet "
-						    + datatype);
+	    return null;
 	}
 
-	throw new UnsupportedOperationException("UNKNOWN literal type "
-						+ datatype);
+	return null;
     }
 
-
+/*
     static AValue convert(Object o) {
 	if (o==null) return null;
 	QName type=conv.getXsdType(o);
 	
 	return convertToAValue(type,o);
     }
-
+*/
 
     public static Object convertFromAValue(AValue target) {
 	Object o;
-	if ((o=target.getInt())!=null) {
-	    return o;
-	}
 	if ((o=target.getString())!=null) {
 	    return o;
 	}
@@ -152,15 +153,6 @@ public class SQLValueConverter {
 	    return o;
 	}
 	if ((o=target.getDouble())!=null) {
-	    return o;
-	}
-	if ((o=target.getUnsignedInt())!=null) {
-	    return o;
-	}
-	if ((o=target.getUnsignedLong())!=null) {
-	    return o;
-	}
-	if ((o=target.isBoolean())!=null) {
 	    return o;
 	}
 

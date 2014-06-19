@@ -12,18 +12,19 @@ import java.util.LinkedList;
 import java.util.List;
 
 import javax.xml.bind.JAXBException;
-import javax.xml.namespace.QName;
 
 import org.openprovenance.prov.model.Activity;
 import org.openprovenance.prov.model.Agent;
 import org.openprovenance.prov.model.Attribute;
 import org.openprovenance.prov.model.Document;
 import org.openprovenance.prov.model.Entity;
-import org.openprovenance.prov.model.HasExtensibility;
+import org.openprovenance.prov.model.HasOther;
 import org.openprovenance.prov.model.HasType;
 import org.openprovenance.prov.model.Identifiable;
 import org.openprovenance.prov.model.Influence;
 import org.openprovenance.prov.model.NamedBundle;
+import org.openprovenance.prov.model.Other;
+import org.openprovenance.prov.model.QualifiedName;
 import org.openprovenance.prov.model.Relation0;
 import org.openprovenance.prov.model.Type;
 import org.openprovenance.prov.model.ActedOnBehalfOf;
@@ -34,7 +35,6 @@ import org.openprovenance.prov.xml.ProvFactory;
 import org.openprovenance.prov.model.ProvUtilities;
 import org.openprovenance.prov.model.SpecializationOf;
 import org.openprovenance.prov.model.Used;
-import org.openprovenance.prov.model.ValueConverter;
 import org.openprovenance.prov.model.WasAssociatedWith;
 import org.openprovenance.prov.model.WasAttributedTo;
 import org.openprovenance.prov.model.WasDerivedFrom;
@@ -47,6 +47,7 @@ import org.openprovenance.prov.model.WasStartedBy;
 
 /** Serialisation of  Prov representation to DOT format. */
 public class ProvToDot {
+    private static final String TOOLBOX_DOT_NS = "http://openprovenance.org/Toolbox/dot#";
     public final static String DEFAULT_CONFIGURATION_FILE="defaultConfig.xml";
     public final static String DEFAULT_CONFIGURATION_FILE_WITH_ROLE="defaultConfigWithRole.xml";
     public final static String DEFAULT_CONFIGURATION_FILE_WITH_ROLE_NO_LABEL="defaultConfigWithRoleNoLabel.xml";
@@ -56,11 +57,11 @@ public class ProvToDot {
     ProvUtilities u=new ProvUtilities();
     ProvFactory of=new ProvFactory();
 
-    public String qnameToString(QName qName) {
+    public String qualifiedNameToString(QualifiedName qName) {
         return qName.getNamespaceURI()+qName.getLocalPart();
     }
 
-    public String localnameToString(QName qName) {
+    public String localnameToString(QualifiedName qName) {
         return qName.getLocalPart();
     }
 
@@ -82,6 +83,7 @@ public class ProvToDot {
         converter.convert(opmFile,outDot,outPdf,null);
     }
 
+ 
 
     public ProvToDot() {
         InputStream is=this.getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIGURATION_FILE);
@@ -332,7 +334,7 @@ public class ProvToDot {
     boolean collapseAnnotations=true;
 
     static int embeddedAnnotationCounter=0;
-    public void emitAnnotations(HasExtensibility node, PrintStream out) {
+    public void emitAnnotations(HasOther node, PrintStream out) {
 
     }
 
@@ -376,20 +378,22 @@ public class ProvToDot {
 
     }
 
-    public void emitAnnotations(String id, HasExtensibility ann, PrintStream out) {
+    public void emitAnnotations(String id, HasOther ann, PrintStream out) {
 
-        if ((ann.getAny()==null) || (ann.getAny().isEmpty())
+        if (((ann.getOther()==null) 
+        	|| (ann.getOther().isEmpty()) 
+        	|| (countOthers(ann)==0))	
             &&
             (((HasType)ann).getType().isEmpty())) return;
 
         HashMap<String,String> properties=new HashMap<String, String>();
-        QName newId=annotationId(((Identifiable)ann).getId(),id);
+        QualifiedName newId=annotationId(((Identifiable)ann).getId(),id);
         emitElement(newId,
                     addAnnotationShape(ann,addAnnotationColor(ann,addAnnotationLabel(ann,properties))),
                     out);
         HashMap<String,String> linkProperties=new HashMap<String, String>();
-        emitRelation(qnameToString(newId),
-                     qnameToString(((Identifiable)ann).getId()),
+        emitRelation(qualifiedNameToString(newId),
+                     qualifiedNameToString(((Identifiable)ann).getId()),
                      addAnnotationLinkProperties(ann,linkProperties),out,true);
     }
 
@@ -397,23 +401,23 @@ public class ProvToDot {
 
     int annotationCount=0;
     @SuppressWarnings("unused")
-    public QName annotationId(QName id,String node) {
+    public QualifiedName annotationId(QualifiedName id,String node) {
 	
         if (true || id==null) {
-            return new QName("http://annot/","ann" + node + (annotationCount++));
+            return of.newQualifiedName("http://annot/","ann" + node + (annotationCount++),null);
         } else {
             return id;
         }
     }
     
-    public HashMap<String, String> addURL(QName id,
+    public HashMap<String, String> addURL(QualifiedName id,
                                           HashMap<String, String> properties) {
 	if (id!=null) properties.put("URL", id.getNamespaceURI()+id.getLocalPart());
 	return properties;
     }
 
 
-    public HashMap<String,String> addAnnotationLinkProperties(HasExtensibility ann, HashMap<String,String> properties) {
+    public HashMap<String,String> addAnnotationLinkProperties(HasOther ann, HashMap<String,String> properties) {
         properties.put("arrowhead","none");
         properties.put("style","dashed");
         properties.put("color","gray");
@@ -451,10 +455,10 @@ public class ProvToDot {
         return properties;
     }
 
-    public  HashMap<String,String> addColors(HasExtensibility e, HashMap<String,String> properties) {
-        Hashtable<String,List<Attribute>> table=u.attributesWithNamespace(e,"http://openprovenance.org/Toolbox/dot#");
+    public  HashMap<String,String> addColors(HasOther object, HashMap<String,String> properties) {
+        Hashtable<String,List<Other>> table=u.attributesWithNamespace(object,TOOLBOX_DOT_NS);
 
-        List<Attribute> o=table.get("fillcolor");
+        List<Other> o=table.get("fillcolor");
         if (o!=null && !o.isEmpty()) {
             properties.put("fillcolor", o.get(0).getValue().toString());
             properties.put("style", "filled");
@@ -467,18 +471,27 @@ public class ProvToDot {
         if (o!=null && !o.isEmpty()) {
             properties.put("URL", o.get(0).getValue().toString());
         }
+        o=table.get("size");
+        if (o!=null && !o.isEmpty()) {
+            if (object instanceof Influence) {
+        	properties.put("penwidth", o.get(0).getValue().toString());
+            }
+        }
+        o=table.get("tooltip");
+        if (o!=null && !o.isEmpty()) {
+            properties.put("tooltip", o.get(0).getValue().toString());
+        }
         return properties;
     }
 
 
-    ValueConverter vc=new ValueConverter(of);
 
     public HashMap<String,String> addEntityShape(Entity p, HashMap<String,String> properties) {
         // default is good for entity
         List<Type> types=p.getType();
         for (Type type: types) {
-            if (type.getValueAsJava(vc) instanceof QName) {
-                QName name=(QName) type.getValueAsJava(vc);
+            if (type.getValue() instanceof QualifiedName) {
+                QualifiedName name=(QualifiedName) type.getValue();
                 if (("Dictionary".equals(name.getLocalPart()))
                     ||
                     ("EmptyDictionary".equals(name.getLocalPart()))) {
@@ -530,40 +543,58 @@ public class ProvToDot {
         return properties;
     }
 
-    public HashMap<String,String> addAnnotationShape(HasExtensibility ann, HashMap<String,String> properties) {
+    public HashMap<String,String> addAnnotationShape(HasOther ann, HashMap<String,String> properties) {
         properties.put("shape","note");
         return properties;
     }
-    public HashMap<String,String> addAnnotationLabel(HasExtensibility ann, HashMap<String,String> properties) {
-        String label="";
-        label=label+"<<TABLE cellpadding=\"0\" border=\"0\">\n";
-        for (Object type: ((HasType)ann).getType()) {
-            label=label+"	<TR>\n";
-            label=label+"	    <TD align=\"left\">" + "type" + ":</TD>\n";
-            label=label+"	    <TD align=\"left\">" + getPropertyValueFromAny(type) + "</TD>\n";
-            label=label+"	</TR>\n";
-        }
-        for (Attribute prop: ann.getAny()) {
 
-            if ("fillcolor".equals(prop.getElementName().getLocalPart())) {
-                    // no need to display this attribute
-                    break;
-            }
-
-            label=label+"	<TR>\n";
-            label=label+"	    <TD align=\"left\">" + convertProperty(prop) + ":</TD>\n";
-            label=label+"	    <TD align=\"left\">" + convertValue(prop) + "</TD>\n";
-            label=label+"	</TR>\n";
-        }
-        label=label+"    </TABLE>>\n";
-        properties.put("label",label);
-        properties.put("fontsize","10");
+    public HashMap<String,String> addAnnotationLabel(HasOther ann, HashMap<String,String> properties) {
+	
+	    String label="";
+	    label=label+"<<TABLE cellpadding=\"0\" border=\"0\">\n";
+	    for (Type type: ((HasType)ann).getType()) {
+		label=label+"	<TR>\n";
+		label=label+"	    <TD align=\"left\">" + "type" + ":</TD>\n";
+		label=label+"	    <TD align=\"left\">" + getPropertyValueFromAny(type) + "</TD>\n";
+		label=label+"	</TR>\n";
+	    }
+	    for (Other prop: ann.getOther()) {
+		
+		if ("fillcolor".equals(prop.getElementName().getLocalPart())) {
+		    // no need to display this attribute
+		    continue;
+		}
+		
+		if ("size".equals(prop.getElementName().getLocalPart())) {
+		    // no need to display this attribute
+		    continue;
+		}
+		
+		label=label+"	<TR>\n";
+		label=label+"	    <TD align=\"left\">" + convertProperty((Attribute)prop) + ":</TD>\n";
+		label=label+"	    <TD align=\"left\">" + convertValue((Attribute)prop) + "</TD>\n";
+		label=label+"	</TR>\n";
+	    }
+	    label=label+"    </TABLE>>\n";
+	    properties.put("label",label);
+	    properties.put("fontsize","10");
+	
         return properties;
     }
 
+    public int countOthers(HasOther ann) {
+	int count=0;
+	for (Other obj: ann.getOther()) {
+	    if (!(TOOLBOX_DOT_NS.equals(obj.getElementName().getNamespaceURI()))) {
+		count++;
+	    }
+	}
+	return count;
+    }
+
    public String convertValue(Attribute v) {
-       if (v.getValue() instanceof QName) {
-           QName name=(QName) v.getValue();
+       if (v.getValue() instanceof QualifiedName) {
+           QualifiedName name=(QualifiedName) v.getValue();
            return name.getLocalPart();
        }
        String label=getPropertyValueFromAny(v);
@@ -572,9 +603,6 @@ public class ProvToDot {
        return label.substring(Math.max(i,j)+1, label.length());
    }
 
-    public String qnameToUri(QName qname) {
-        return qname.getNamespaceURI() + qname.getLocalPart();
-    }
 
     public String convertProperty(Attribute oLabel) {
         String label=getPropertyFromAny(oLabel);
@@ -584,20 +612,13 @@ public class ProvToDot {
     }
 
     public String getPropertyFromAny (Attribute o) {
-        return qnameToUri(o.getElementName());
-        /*
-        if (o instanceof JAXBElement) {
-            return qnameToUri(((JAXBElement<?>)o).getName());
-        } else if (o instanceof org.w3c.dom.Element) {
-            return ((org.w3c.dom.Element)o).getTagName();
-        } else {
-            return o.toString();
-        }*/
+        return o.getElementName().getUri();
     }
 
-    public String getPropertyValueFromAny (Object val) {
-        if (val instanceof QName) {
-            QName q=(QName)val;
+    public String getPropertyValueFromAny (Type t) {
+        Object val=t.getValue();
+        if (val instanceof QualifiedName) {
+            QualifiedName q=(QualifiedName)val;
             return q.getNamespaceURI() + q.getLocalPart();
         } else {
                 return "" +  val;
@@ -605,8 +626,8 @@ public class ProvToDot {
     }
     public String getPropertyValueFromAny (Attribute o) {
         Object val=o.getValue();
-        if (val instanceof QName) {
-            QName q=(QName)val;
+        if (val instanceof QualifiedName) {
+            QualifiedName q=(QualifiedName)val;
             return q.getNamespaceURI() + q.getLocalPart();
         } else {
                 return "" +  val;
@@ -614,7 +635,7 @@ public class ProvToDot {
     }
 
 
-    public HashMap<String,String> addAnnotationColor(HasExtensibility ann, HashMap<String,String> properties) {
+    public HashMap<String,String> addAnnotationColor(HasOther ann, HashMap<String,String> properties) {
         if (displayAnnotationColor) {
             properties.put("color",annotationColor(ann));
             properties.put("fontcolor","black");
@@ -689,7 +710,7 @@ public class ProvToDot {
     }
 
 
-    public String annotationColor(HasExtensibility ann) {
+    public String annotationColor(HasOther ann) {
         List<String> colors=new LinkedList<String>();
         colors.add("gray");
         return selectColor(colors);
@@ -734,7 +755,7 @@ public class ProvToDot {
     public void emitDependency(Relation0 e, PrintStream out) {
         HashMap<String,String> properties=new HashMap<String, String>();
 
-        List<QName> others=u.getOtherCauses(e);
+        List<QualifiedName> others=u.getOtherCauses(e);
         if (others !=null) { // n-ary case
             String bnid="bn" + (bncounter++);
 
@@ -749,17 +770,22 @@ public class ProvToDot {
         	properties2.put("arrowtail",arrowTail);
         	properties2.put("dir","back");
             }
-
+	    if (e instanceof HasOther) {
+        	addColors((HasOther)e,properties2);
+            }
             HashMap<String,String> properties3=new HashMap<String, String>();
 
 
-            emitRelation( qnameToString(u.getEffect(e)),
+            emitRelation( qualifiedNameToString(u.getEffect(e)),
                           bnid,
                           properties2,
                           out,
                           true);
 
             relationName(e, properties3);
+            if (e instanceof HasOther) {
+        	addColors((HasOther)e,properties3);
+            }
 
             if (e instanceof DerivedByInsertionFrom) {
                 properties3.put("arrowhead","onormal");
@@ -767,18 +793,20 @@ public class ProvToDot {
             
             if (u.getCause(e)!=null) {
         	emitRelation( bnid,
-        	              qnameToString(u.getCause(e)),
+        	              qualifiedNameToString(u.getCause(e)),
         	              properties3,
         	              out,
         	              true);
             }
 
             HashMap<String,String> properties4=new HashMap<String, String>();
-
-            for (QName other: others) {
+            if (e instanceof HasOther) {
+        	addColors((HasOther)e,properties4);
+            }
+            for (QualifiedName other: others) {
 		if (other!=null) {
 		    emitRelation( bnid,
-				  qnameToString(other),
+				  qualifiedNameToString(other),
 				  properties4,
 				  out,
 				  true);
@@ -798,8 +826,8 @@ public class ProvToDot {
 		    properties.put("dir","both");
 		}
 
-		emitRelation( qnameToString(u.getEffect(e)),
-			      qnameToString(u.getCause(e)),
+		emitRelation( qualifiedNameToString(u.getEffect(e)),
+			      qualifiedNameToString(u.getCause(e)),
 			      properties,
 			      out,
 			      true);
@@ -880,7 +908,7 @@ public class ProvToDot {
         Influence e=(Influence)e0;
         List<Type> type=of.getType(e);
         if ((type!=null) && (!type.isEmpty())) {
-            label=type.get(0).getValueAsJava(vc).toString();
+            label=type.get(0).getValue().toString();
         } else if (getRelationPrintRole(e)) {
             String role=of.getRole(e);
             if (role!=null) {
@@ -952,9 +980,9 @@ public class ProvToDot {
         return "n" + name.replace('-','_').replace('.','_').replace('/','_').replace(':','_').replace('#','_').replace('~','_');
     }
 
-    public void emitElement(QName name, HashMap<String,String> properties, PrintStream out) {
+    public void emitElement(QualifiedName name, HashMap<String,String> properties, PrintStream out) {
         StringBuffer sb=new StringBuffer();
-        sb.append(""+dotify(qnameToString(name)));
+        sb.append(""+dotify(qualifiedNameToString(name)));
         emitProperties(sb,properties);
         out.println(sb.toString());
     }
@@ -1016,9 +1044,9 @@ public class ProvToDot {
     }
 
     void prelude(NamedBundle doc, PrintStream out) {
-        out.println("subgraph " + "cluster" + dotify(qnameToString(doc.getId())) + " { ");
+        out.println("subgraph " + "cluster" + dotify(qualifiedNameToString(doc.getId())) + " { ");
         out.println("  label=\"" + localnameToString(doc.getId()) + "\";");
-        out.println("  URL=\"" + qnameToString(doc.getId()) + "\";");
+        out.println("  URL=\"" + qualifiedNameToString(doc.getId()) + "\";");
     }
 
     void postlude(NamedBundle doc, PrintStream out) {

@@ -1,11 +1,10 @@
 package org.openprovenance.prov.notation;
 import java.io.File;
-import java.util.Hashtable;
 import javax.xml.bind.JAXBException;
 import junit.framework.TestCase;
 
+import org.openprovenance.prov.model.Namespace;
 import org.openprovenance.prov.xml.Document;
-import org.openprovenance.prov.xml.NamespacePrefixMapper;
 import org.openprovenance.prov.xml.ProvSerialiser;
 import org.openprovenance.prov.xml.ProvFactory;
 import  org.antlr.runtime.tree.CommonTree;
@@ -22,21 +21,10 @@ public class PubTest
     public static final String PRIM_NS="http://openprovenance.org/primitives#";
     public static final String PRIM_PREFIX="prim";
     
-
-
-    static final Hashtable<String,String> namespaces;
+    
+    public static ProvFactory pFactory=new ProvFactory();
 
     
-    public static ProvFactory pFactory;
-
-    static {
-        namespaces=new Hashtable<String, String>();
-        namespaces.put("pc1",PC1_NS);
-        namespaces.put("xsd",NamespacePrefixMapper.XSD_NS);
-        namespaces.put("prim","http://openprovenance.org/primitives#");
-        pFactory=new ProvFactory(namespaces);
-    }
-
     /**
      * Create the test case
      *
@@ -59,14 +47,17 @@ public class PubTest
         Utility u=new Utility();
         CommonTree tree = u.convertASNToTree(file);
 
-        Object o2=u.convertTreeToJavaBean(tree);
+        Object o2=u.convertTreeToJavaBean(tree,pFactory);
 
         graph1=(Document)o2;
 
-        
+        graph1.setNamespace(Namespace.gatherNamespaces(graph1));
+
 
         try {
             ProvSerialiser serial=ProvSerialiser.getThreadProvSerialiser();
+            Namespace.withThreadNamespace(graph1.getNamespace());
+
             serial.serialiseDocument(new File(file2),(Document)o2,true);
 
             assertTrue(true);

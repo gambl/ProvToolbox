@@ -1,20 +1,18 @@
 package org.openprovenance.prov.sql;
 
 
-import java.util.Hashtable;
 import java.util.Properties;
 import java.io.IOException;
 import java.io.InputStream;
-import javax.xml.namespace.QName;
 import javax.xml.datatype.DatatypeFactory;
 
 import org.openprovenance.prov.sql.ObjectFactory2;
 import org.openprovenance.prov.model.Attribute.AttributeKind;
 
-import org.openprovenance.prov.model.IDRef;
+import org.openprovenance.prov.model.Attribute;
 import org.openprovenance.prov.model.LiteralConstructor;
+import org.openprovenance.prov.model.QualifiedName;
 
-import org.openprovenance.prov.model.ValueConverter;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -78,34 +76,22 @@ public class ProvFactory extends org.openprovenance.prov.model.ProvFactory imple
 
 
     protected DatatypeFactory dataFactory;
-    /** Note, this method now makes it stateful :-( */
-    private Hashtable<String, String> namespaces = null;
     protected ObjectFactory of;
 
     
-    final protected org.openprovenance.prov.xml.validation.ObjectFactory vof;
 
     public ProvFactory() {
 	super(new ObjectFactory2());
-	vof = new org.openprovenance.prov.xml.validation.ObjectFactory();
 	init();
-	setNamespaces(new Hashtable<String, String>());
     }
 
-    public ProvFactory(Hashtable<String, String> namespaces) {
-	super(new ObjectFactory2(), namespaces);
-	vof = new org.openprovenance.prov.xml.validation.ObjectFactory();
-	this.namespaces = namespaces;
-	init();
-    }
 
     public ProvFactory(ObjectFactory2 of) {
 	super(of);
-	vof = new org.openprovenance.prov.xml.validation.ObjectFactory();
 	init();
-	setNamespaces(new Hashtable<String, String>());
     }
 
+    /*
     @Override
     public org.openprovenance.prov.model.Attribute createAttribute(QName qname,
 								   Object value,
@@ -120,48 +106,102 @@ public class ProvFactory extends org.openprovenance.prov.model.ProvFactory imple
 	// TODO Auto-generated method stub
 	return null;
     }
+    */
+
+   
+
+
+
+    
+    public Location newLocation(Object value, QualifiedName type) {
+        Location loc=new Location();
+        loc.type=type;
+        loc.setValueFromObject(value);
+        return loc;
+    }
+    public Type newType(Object value, QualifiedName type) {
+        Type typ=new Type();
+        typ.type=type;
+        typ.setValueFromObject(value);
+        return typ;
+    }
+    public Value newValue(Object value, QualifiedName type) {
+        Value res=new Value();
+        res.type=type;
+        res.setValueFromObject(value);
+        return res;
+    }
+    public Role newRole(Object value, QualifiedName type) {
+        Role res=new Role();
+        res.type=type;
+        res.setValueFromObject(value);
+        return res;
+    }
+    public Label newLabel(Object value, QualifiedName type) {
+        Label res=new Label();
+        res.type=type;
+        res.setValueFromObject(value);
+        return res;
+    }
+    public Other newOther(QualifiedName elementName, Object value, QualifiedName type) {
+        Other res=new Other();
+        res.type=type;
+        res.setValueFromObject(value);
+        res.setElementName(elementName);
+        return res;
+    }
+    
+    @Override
+    public Attribute newAttribute(QualifiedName elementName, Object value, QualifiedName type) {
+	// TODO: use TypedValue.getAttributeKind and switch on a kind
+	if (elementName.equals(getName().PROV_LOCATION)) {
+	    return newLocation(value,type);
+	}
+	if (elementName.equals(getName().PROV_TYPE)) {
+	    return newType(value,type);
+	}
+	if (elementName.equals(getName().PROV_VALUE)) {
+	    return newValue(value,type);
+	}
+	if (elementName.equals(getName().PROV_ROLE)) {
+	    return newRole(value,type);
+	}
+	if (elementName.equals(getName().PROV_LABEL)) {
+	    return newLabel(value,type);
+	}
+	return newOther(elementName, value, type);
+    }
+ 
 
     @Override
-    public IDRef createIDRef() {
-	// TODO Auto-generated method stub
+    public org.openprovenance.prov.model.Attribute newAttribute(AttributeKind kind,
+								Object value,
+								QualifiedName type) {
+
+	switch (kind) {
+	case PROV_LOCATION:
+	    return newLocation(value, type);
+	case OTHER:
+	    throw new UnsupportedOperationException();
+	case PROV_LABEL:
+	    return newLabel(value, type);
+	case PROV_ROLE:
+	    return newRole(value, type);
+	case PROV_TYPE:
+	    return newType(value, type);
+	case PROV_VALUE:
+	    return newValue(value, type);
+	case PROV_KEY:
+	    throw new UnsupportedOperationException();
+	}
 	return null;
     }
 
-
-
-    public Attribute newAttribute(QName qname, Object value, ValueConverter vconv) {
-  	Attribute res = new Attribute(qname, value, vconv.getXsdType(value));
-  	return res;
-      }
-
-    public Attribute newAttribute(QName qname, Object value, QName type) {
-  	Attribute res = new Attribute(qname, value, type);
-  	return res;
-      }
-
-    public Attribute newAttribute(Attribute.AttributeKind kind, Object value, ValueConverter vconv) {
-  	Attribute res = new Attribute(kind, value, vconv.getXsdType(value));
-  	return res;
-      }
-    public Attribute newAttribute(Attribute.AttributeKind kind, Object value, QName type) {
-  	Attribute res = new Attribute(kind, value, type);
-  	return res;
-      }
-
-    public Attribute newAttribute(String namespace, String localName,
-				  String prefix, Object value, ValueConverter vconv) {
-	Attribute res = new Attribute(new QName(namespace, localName, prefix),
-				      value, vconv.getXsdType(value));
-	return res;
-    }
-
-    public Attribute newAttribute(String namespace, String localName,
-				  String prefix, Object value, QName type) {
-	Attribute res = new Attribute(new QName(namespace, localName, prefix),
-				      value, type);
-	return res;
-    }
-
+	@Override
+	public QualifiedName newQualifiedName(String namespace, String local,
+			String prefix) {
+		return new org.openprovenance.prov.sql.QualifiedName(namespace, local, prefix);
+	}
 
 
 }

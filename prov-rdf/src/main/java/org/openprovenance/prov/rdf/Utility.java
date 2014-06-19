@@ -7,12 +7,12 @@ import java.net.URL;
 import javax.xml.bind.JAXBException;
 
 import org.openprovenance.prov.model.BeanTraversal;
+import org.openprovenance.prov.model.Namespace;
 import org.openprovenance.prov.rdf.collector.QualifiedCollector;
 import org.openprovenance.prov.rdf.collector.RdfCollector;
 
 import org.openprovenance.prov.model.Document;
-import org.openprovenance.prov.xml.ProvFactory;
-import org.openprovenance.prov.model.ValueConverter;
+import org.openprovenance.prov.model.ProvFactory;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.contextaware.ContextAwareRepository;
 import org.openrdf.repository.sail.SailRepository;
@@ -24,24 +24,35 @@ import org.openrdf.rio.Rio;
 import org.openrdf.sail.memory.MemoryStore;
 
 public class Utility {
+    private final ProvFactory pFactory;
+    private final Ontology onto;
+
+    public Utility (ProvFactory pFactory, Ontology onto) {
+	this.pFactory=pFactory;
+	this.onto=onto;
+
+    }
 
 
     public Document parseRDF(String filename) throws RDFParseException,
 					     RDFHandlerException, IOException,
 					     JAXBException {
-    	System.out.println("**** Parse "+filename);
-	ProvFactory pFactory = new ProvFactory();
+    	//System.out.println("**** Parse "+filename);
 	File file = new File(filename);
 	RDFParser rdfParser = Rio.createParser(Rio.getParserFormatForFileName(file.getName()));
 	URL documentURL = file.toURI().toURL();
 	InputStream inputStream = documentURL.openStream();
-	RdfCollector rdfCollector = new QualifiedCollector(pFactory);
+	RdfCollector rdfCollector = new QualifiedCollector(pFactory,onto);
 	rdfParser.setRDFHandler(rdfCollector);
 	rdfParser.parse(inputStream, documentURL.toString());
-	return rdfCollector.getDocument();
+	Document doc=rdfCollector.getDocument();
+	Namespace ns=doc.getNamespace();
+	ns.unregister("xsd", "http://www.w3.org/2001/XMLSchema#");
+	ns.register("xsd", "http://www.w3.org/2001/XMLSchema");
+	return doc;
     }
 
-    public void dumpRDF(org.openprovenance.prov.model.ProvFactory pFactory, Document document,
+    public void dumpRDF(Document document,
 			RDFFormat format, String filename) throws Exception {
 	
 	
@@ -50,20 +61,23 @@ public class Utility {
 	ContextAwareRepository rep=new ContextAwareRepository(myRepository); // was it necessary to create that?
 
 	RepositoryHelper rHelper = new RepositoryHelper();
-
 	
-	RdfConstructor rdfc = new RdfConstructor(new SesameGraphBuilder(rep));
-	rdfc.getNamespaceTable().putAll(document.getNss());
-	rdfc.getNamespaceTable().put("xsd", "http://www.w3.org/2001/XMLSchema#");
-	rdfc.getNamespaceTable().put("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+	RdfConstructor rdfc = new RdfConstructor(new SesameGraphBuilder(rep, pFactory), pFactory);
+			
 	
+	Namespace ns=new Namespace(document.getNamespace());	
+	ns.unregister("xsd", "http://www.w3.org/2001/XMLSchema");
+	ns.register("xsd", "http://www.w3.org/2001/XMLSchema#");
+	ns.register("rdfs", "http://www.w3.org/2000/01/rdf-schema#");
+	rdfc.setNamespace(ns);
 
-	BeanTraversal bt = new BeanTraversal(rdfc,pFactory, new ValueConverter(pFactory));
+	Namespace.withThreadNamespace(document.getNamespace());
+	BeanTraversal bt = new BeanTraversal(rdfc,pFactory);
 	bt.convert(document);
 	
 
 	rHelper.dumpToRDF(filename, rep, format, 
-			  rdfc.getNamespaceTable());
+			  rdfc.getNamespace());
     }
     
 

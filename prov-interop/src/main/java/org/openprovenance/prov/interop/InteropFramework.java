@@ -15,10 +15,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Variant;
 import javax.xml.bind.JAXBException;
 import org.openprovenance.prov.model.Document;
+import org.openprovenance.prov.model.Namespace;
 import org.openprovenance.prov.xml.ProvDeserialiser;
 import org.openprovenance.prov.xml.ProvSerialiser;
 import org.openprovenance.prov.xml.ProvFactory;
 import org.openprovenance.prov.notation.Utility;
+import org.openprovenance.prov.rdf.Ontology;
 
 import org.antlr.runtime.tree.CommonTree;
 
@@ -42,6 +44,7 @@ public class InteropFramework {
 
 	final Utility u = new Utility();
 	final ProvFactory pFactory = ProvFactory.getFactory();
+	final Ontology onto=new Ontology(pFactory);
 	final private String verbose;
 	final private String debug;
 	final private String logfile;
@@ -184,8 +187,8 @@ public class InteropFramework {
 
 	public void provn2html(String file, String file2)
 			throws java.io.IOException, JAXBException, Throwable {
-		Document doc = (Document) u.convertASNToJavaBean(file);
-		String s = u.convertBeanToHTML(doc);
+		Document doc = (Document) u.convertASNToJavaBean(file,pFactory);
+		String s = u.convertBeanToHTML(doc,pFactory);
 		u.writeTextToFile(s, file2);
 
 	}
@@ -248,6 +251,7 @@ public class InteropFramework {
 	}
 
 	public void writeDocument(String filename, Document doc) {
+	    Namespace.withThreadNamespace(doc.getNamespace());
 		try {
 			ProvFormat format = getTypeForFile(filename);
 			if (format == null) {
@@ -259,33 +263,33 @@ public class InteropFramework {
 			setNamespaces(doc);
 			switch (format) {
 			case PROVN: {
-				u.writeDocument(doc, filename);
+				u.writeDocument(doc, filename,pFactory);
 				break;
 			}
 			case XML: {
 				ProvSerialiser serial = ProvSerialiser
 						.getThreadProvSerialiser();
-				logger.debug("namespaces " + doc.getNss());
+				logger.debug("namespaces " + doc.getNamespace());
 				serial.serialiseDocument(new File(filename), doc, true);
 				break;
 			}
 			case TURTLE: {
-				new org.openprovenance.prov.rdf.Utility().dumpRDF(pFactory,
+				new org.openprovenance.prov.rdf.Utility(pFactory,onto).dumpRDF(
 						doc, RDFFormat.TURTLE, filename);
 				break;
 			}
 			case RDFXML: {
-				new org.openprovenance.prov.rdf.Utility().dumpRDF(pFactory,
+				new org.openprovenance.prov.rdf.Utility(pFactory,onto).dumpRDF(
 						doc, RDFFormat.RDFXML, filename);
 				break;
 			}
 			case TRIG: {
-				new org.openprovenance.prov.rdf.Utility().dumpRDF(pFactory,
+				new org.openprovenance.prov.rdf.Utility(pFactory,onto).dumpRDF(
 						doc, RDFFormat.TRIG, filename);
 				break;
 			}
 			case JSON: {
-				new org.openprovenance.prov.json.Converter().writeDocument(doc,
+				new org.openprovenance.prov.json.Converter(pFactory).writeDocument(doc,
 						filename);
 				break;
 			}
@@ -367,8 +371,8 @@ public class InteropFramework {
 	}
 
 	public void setNamespaces(Document doc) {
-		if (doc.getNss() == null)
-			doc.setNss(new Hashtable<String, String>());
+		if (doc.getNamespace() == null)
+			doc.setNamespace(new Namespace());
 
 	}
 
@@ -389,19 +393,22 @@ public class InteropFramework {
 															// from these
 															// formats
 			case JSON: {
-				return new org.openprovenance.prov.json.Converter()
+				return new org.openprovenance.prov.json.Converter(pFactory)
 						.readDocument(filename);
 			}
 			case PROVN: {
 				Utility u = new Utility();
 				CommonTree tree = u.convertASNToTree(filename);
-				Object o = u.convertTreeToJavaBean(tree);
+				Object o = u.convertTreeToJavaBean(tree,pFactory);
+				Document doc=(Document)o;
+				Namespace ns=Namespace.gatherNamespaces(doc);
+                                doc.setNamespace(ns);
 				return o;
 			}
 			case RDFXML:
 			case TRIG:
 			case TURTLE: {
-				org.openprovenance.prov.rdf.Utility rdfU = new org.openprovenance.prov.rdf.Utility();
+				org.openprovenance.prov.rdf.Utility rdfU = new org.openprovenance.prov.rdf.Utility(pFactory,onto);
 				Document doc = rdfU.parseRDF(filename);
 				return doc;
 			}
@@ -409,8 +416,10 @@ public class InteropFramework {
 				File in = new File(filename);
 				ProvDeserialiser deserial = ProvDeserialiser
 						.getThreadProvDeserialiser();
-				Document c = deserial.deserialiseDocument(in);
-				return c;
+				Document doc = deserial.deserialiseDocument(in);
+				Namespace ns=Namespace.gatherNamespaces(doc);
+				doc.setNamespace(ns);
+				return doc;
 			}
 			default: {
 				System.out.println("Unknown format " + filename);
@@ -433,7 +442,7 @@ public class InteropFramework {
 		try {
 			Utility u = new Utility();
 			CommonTree tree = u.convertASNToTree(filename);
-			Object o = u.convertTreeToJavaBean(tree);
+			Object o = u.convertTreeToJavaBean(tree,pFactory);
 			if (o != null) {
 				return o;
 			}
@@ -453,7 +462,7 @@ public class InteropFramework {
 		}
 
 		try {
-			Object o = new org.openprovenance.prov.json.Converter()
+			Object o = new org.openprovenance.prov.json.Converter(pFactory)
 					.readDocument(filename);
 			if (o != null) {
 				return o;
@@ -463,7 +472,7 @@ public class InteropFramework {
 
 		}
 		try {
-			org.openprovenance.prov.rdf.Utility rdfU = new org.openprovenance.prov.rdf.Utility();
+			org.openprovenance.prov.rdf.Utility rdfU = new org.openprovenance.prov.rdf.Utility(pFactory,onto);
 			Document doc = rdfU.parseRDF(filename);
 			if (doc != null) {
 				return doc;

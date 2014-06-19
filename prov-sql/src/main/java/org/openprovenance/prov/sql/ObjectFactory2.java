@@ -12,9 +12,11 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElementDecl;
 import javax.xml.bind.annotation.XmlRegistry;
 import javax.xml.namespace.QName; 
+
+import org.openprovenance.prov.model.Key;
+import org.openprovenance.prov.model.Other;
 import org.openprovenance.prov.model.Type;
 import org.openprovenance.prov.model.Document;
-import org.openprovenance.prov.model.URIWrapper;
 import org.openprovenance.prov.model.Location;
 import org.openprovenance.prov.model.Value;
 import org.openprovenance.prov.model.Used;
@@ -22,7 +24,6 @@ import org.openprovenance.prov.model.WasGeneratedBy;
 import org.openprovenance.prov.model.WasDerivedFrom;
 import org.openprovenance.prov.model.WasStartedBy;
 import org.openprovenance.prov.model.WasEndedBy;
-import org.openprovenance.prov.model.WasGeneratedBy;
 import org.openprovenance.prov.model.WasInvalidatedBy;
 import org.openprovenance.prov.model.MentionOf;
 import org.openprovenance.prov.model.WasInfluencedBy;
@@ -32,7 +33,6 @@ import org.openprovenance.prov.model.AlternateOf;
 import org.openprovenance.prov.model.Entity;
 import org.openprovenance.prov.model.Agent;
 import org.openprovenance.prov.model.Activity;
-import org.openprovenance.prov.model.Entity;
 import org.openprovenance.prov.model.WasAttributedTo;
 import org.openprovenance.prov.model.ActedOnBehalfOf;
 import org.openprovenance.prov.model.WasAssociatedWith; 
@@ -86,7 +86,6 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     private final static QName _Agent_QNAME = new QName("http://www.w3.org/ns/prov#", "agent");
     private final static QName _WasInvalidatedBy_QNAME = new QName("http://www.w3.org/ns/prov#", "wasInvalidatedBy");
     private final static QName _MentionOf_QNAME = new QName("http://www.w3.org/ns/prov#", "mentionOf");
-    private final static QName _Others_QNAME = new QName("http://www.w3.org/ns/prov#", "others");
     private final static QName _WasAttributedTo_QNAME = new QName("http://www.w3.org/ns/prov#", "wasAttributedTo");
     private final static QName _SpecializationOf_QNAME = new QName("http://www.w3.org/ns/prov#", "specializationOf");
     private final static QName _WasStartedBy_QNAME = new QName("http://www.w3.org/ns/prov#", "wasStartedBy");
@@ -103,6 +102,11 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
      */
     public ObjectFactory2() {
     }
+
+    public Other createOther() {
+        return new org.openprovenance.prov.sql.Other();
+    }
+
 
     /**
      * Create an instance of {@link EmptyDictionary }
@@ -279,6 +283,15 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     public Value createValue() {
         return new org.openprovenance.prov.sql.Value();
     }
+    
+    /**
+     * Create an instance of {@link Key }
+     * 
+     */
+   public Key createKey() {
+        return new org.openprovenance.prov.sql.Key();
+    }
+
 
     /**
      * Create an instance of {@link Bundle }
@@ -313,14 +326,6 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     }
 
     /**
-     * Create an instance of {@link Others }
-     * 
-     */
-    public Others createOthers() {
-        return new org.openprovenance.prov.sql.Others();
-    }
-
-    /**
      * Create an instance of {@link SpecializationOf }
      * 
      */
@@ -337,7 +342,7 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     }
 
     /**
-     * Create an instance of {@link InternationalizedString }
+     * Create an instance of {@link LangString }
      * 
      */
     public InternationalizedString createInternationalizedString() {
@@ -446,14 +451,6 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
      */
     public NamedBundle createNamedBundle() {
         return new org.openprovenance.prov.sql.NamedBundle();
-    }
-
-    /**
-     * Create an instance of {@link org.openprovenance.prov.model.URIWrapper }
-     * 
-     */
-    public org.openprovenance.prov.model.URIWrapper createURIWrapper() {
-        return new org.openprovenance.prov.model.URIWrapper();
     }
 
     /**
@@ -708,7 +705,7 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     }
 
     /**
-     * Create an instance of {@link JAXBElement }{@code <}{@link InternationalizedString }{@code >}}
+     * Create an instance of {@link JAXBElement }{@code <}{@link LangString }{@code >}}
      * 
      */
     @XmlElementDecl(namespace = "http://www.w3.org/ns/prov#", name = "label")
@@ -741,15 +738,6 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     @XmlElementDecl(namespace = "http://www.w3.org/ns/prov#", name = "mentionOf")
     public JAXBElement<MentionOf> createMentionOf(MentionOf value) {
         return new JAXBElement<MentionOf>(_MentionOf_QNAME, MentionOf.class, null, value);
-    }
-
-    /**
-     * Create an instance of {@link JAXBElement }{@code <}{@link Others }{@code >}}
-     * 
-     */
-    @XmlElementDecl(namespace = "http://www.w3.org/ns/prov#", name = "others")
-    public JAXBElement<Others> createOthers(Others value) {
-        return new JAXBElement<Others>(_Others_QNAME, Others.class, null, value);
     }
 
     /**
@@ -832,5 +820,6 @@ public class ObjectFactory2 implements org.openprovenance.prov.model.ObjectFacto
     public JAXBElement<WasGeneratedBy> createWasGeneratedBy(WasGeneratedBy value) {
         return new JAXBElement<WasGeneratedBy>(_WasGeneratedBy_QNAME, WasGeneratedBy.class, null, value);
     }
+
 
 }

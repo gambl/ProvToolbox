@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Hashtable;
 import java.util.Properties;
 
 import javax.persistence.EntityManager;
@@ -14,23 +13,23 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.Query;
 
 import org.apache.log4j.Logger;
-import org.openprovenance.prov.model.Statement;
-import org.openprovenance.prov.model.StatementOrBundle;
+import org.openprovenance.prov.model.QualifiedName;
+import org.openprovenance.prov.model.ProvUtilities;
 
 public class PersistenceUtility {
     static Logger logger = Logger.getLogger(PersistenceUtility.class);
     static private EntityManagerFactory emf;                                                                                                                   
-    static private EntityManager entityManager;      
-
+    static private EntityManager entityManager;
+    static Hashtable<String, QualifiedName> table;
     public PersistenceUtility() {
        
- 
     }
     
     public void setUp() {
-	if (emf==null) this.emf=createEntityManagerFactory();  
-	if (entityManager==null) this.entityManager=createEntityManager();  
-	
+	if (emf==null) emf=createEntityManagerFactory();  
+	if (entityManager==null) entityManager=createEntityManager(); 
+	if (table==null) table=new Hashtable<String, QualifiedName>();
+	 
 	//System.out.println("**** merging IdentifierManagement");
         //entityManager.persist(IdentifierManagement.it);
 	//entityManager.merge(IdentifierManagement.it);
@@ -47,8 +46,7 @@ public class PersistenceUtility {
                while (resources.hasMoreElements()) {
                  final URL resource = resources.nextElement();
                  //logger.debug("Detected [" + resource + "].");
-               }
-         
+               }         
              }
              catch (IOException ignored) {
          
@@ -118,7 +116,7 @@ public class PersistenceUtility {
 
 
     public String getEntityManagerFactoryPropertiesResourceName() {
-        return "persistence.properties";
+        return DB_PROPERTIES_FILE;
     }
 
              
@@ -165,24 +163,22 @@ public class PersistenceUtility {
     
 
     public Document persist(Document doc) {
+	try {
             beginTransaction();
-            Dagify dagifier=new Dagify(entityManager);
-            for (StatementOrBundle s: doc.getStatementOrBundle()) {
-                if (s instanceof Statement) {
-                    Dagify.run((Statement)s, dagifier);
-                } else if (s instanceof NamedBundle) {
-                    for (Statement s2: ((NamedBundle)s).getStatement()) {
-                        Dagify.run((Statement)s2, dagifier);
-                    }       
-                }
-            }
+            Dagify dagifier=new Dagify(entityManager,table);
+            ProvUtilities u=new ProvUtilities();
+            u.forAllStatementOrBundle(doc.getStatementOrBundle(), dagifier);
             entityManager.persist(doc);
             
-            //System.out.println("**** persisting IdentifierManagement");
-            //entityManager.persist(IdentifierManagement.it);
-            commitTransaction();
             return doc;
-    
+	} catch (RuntimeException re) {
+	    re.printStackTrace();
+	    return null;
+	}
+	finally {
+            commitTransaction();
+	}
+     
     }            
     
     
@@ -198,6 +194,28 @@ public class PersistenceUtility {
     }            
     
    
+
+    private static Properties getPropertiesFromClasspath(String propFileName) {
+	Properties props = new Properties();
+	InputStream inputStream = PersistenceUtility.class.getClassLoader()
+		.getResourceAsStream(propFileName);
+	
+	if (inputStream == null) {
+	    // throw new FileNotFoundException("property file '" + propFileName
+	    // + "' not found in the classpath");
+	    return null;
+	}
+	try {
+	    props.load(inputStream);
+	} catch (IOException ee) {
+	    return null;
+	}
+	return props;
+    }
+    
+    final static private String configFilename="db.properties";      
+    public final static String DB_PROPERTIES_FILE = getPropertiesFromClasspath(configFilename).getProperty("persistence.properties");
+
 
     
 

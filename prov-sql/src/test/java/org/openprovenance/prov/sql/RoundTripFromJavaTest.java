@@ -3,13 +3,12 @@ package org.openprovenance.prov.sql;
 import java.io.File;
 import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.Hashtable;
 import javax.xml.bind.JAXBException;
 import org.openprovenance.prov.model.Document;
+import org.openprovenance.prov.model.Namespace;
 import org.openprovenance.prov.xml.ProvUtilities;
 import org.openprovenance.prov.model.Statement;
 import org.openprovenance.prov.xml.UncheckedTestException;
-import org.openprovenance.prov.xml.ValueConverter;
 
 /**
  * Unit test for PROV roundtrip conversion between Java and XML
@@ -25,25 +24,13 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
     static final ProvUtilities util=new ProvUtilities();
 
 
-    static final Hashtable<String, String> namespaces;
 
-    public static ValueConverter vconv;
-
-    static Hashtable<String, String> updateNamespaces (Hashtable<String, String> nss) {
-        nss.put(EX_PREFIX, EX_NS);
-        nss.put(EX2_PREFIX, EX2_NS);
-        nss.put("_", EX3_NS);
-	return nss;
-    }
     static  void setNamespaces() {
-	pFactory.resetNamespaces();
-	pFactory.getNss().putAll(updateNamespaces(new Hashtable<String, String>()));
     }
 
     static {
-	namespaces = updateNamespaces(new Hashtable<String, String>());
-	pFactory = new ProvFactory(namespaces);
-	vconv=new ValueConverter(pFactory);
+	pFactory = new ProvFactory();
+	name=pFactory.getName();
     }
 	private DocumentEquality documentEquality;
 
@@ -65,13 +52,23 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
      */
 
     public void updateNamespaces(Document doc) {
-	Hashtable<String, String> nss = new Hashtable<String, String>();
-	updateNamespaces(nss);
-	doc.setNss(nss);
+	Namespace ns=Namespace.gatherNamespaces(doc);
+	doc.setNamespace(ns);
     }
    
     public String extension() {
 	return ".xml";
+    }
+    
+
+    public org.openprovenance.prov.model.QualifiedName q(String n) {
+        return new QualifiedName(EX_NS, n, EX_PREFIX);
+    }
+
+    public void testEntity0 () {
+	System.out.println("Starting test Entity0");
+	super.testEntity0();
+	System.out.println("Ending test Entity0");
     }
     
     public void testDictionaryInsertion1() {}
@@ -80,6 +77,7 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
     public void testDictionaryInsertion4() {}
     public void testDictionaryInsertion5() {}
     public void testDictionaryInsertion6() {}
+    public void testDictionaryInsertion7() {}
     public void testDictionaryRemoval1() {}
     public void testDictionaryRemoval2() {}
     public void testDictionaryRemoval3() {}
@@ -133,7 +131,7 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
             throw new UncheckedTestException(e);
         }
     }
-    
+   
 
     public void compareDocuments(Document doc, Document doc2, boolean check) {
 	assertTrue("self doc equality", doc.equals(doc));
@@ -171,6 +169,7 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
     public void writeXMLDocument(Document doc, String file) throws JAXBException {
         
 	ProvSerialiser serial = ProvSerialiser.getThreadProvSerialiser();
+	Namespace.withThreadNamespace(doc.getNamespace());
 	serial.serialiseDocument(new File(file), (org.openprovenance.prov.sql.Document)doc, true);
 	StringWriter sw = new StringWriter();
 	serial.serialiseDocument(sw, (org.openprovenance.prov.sql.Document)doc, true);
@@ -178,7 +177,12 @@ public class RoundTripFromJavaTest extends org.openprovenance.prov.xml.RoundTrip
 	 
 	 
     }
-
+    @Override
+    public boolean checkSchema(String name) {
+	return false;
+    }
     ///////////////////////////////////////////////////////////////////////
+
+ 
 
 }

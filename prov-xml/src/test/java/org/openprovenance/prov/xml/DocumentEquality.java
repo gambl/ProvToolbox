@@ -18,6 +18,7 @@ import org.openprovenance.prov.model.Document;
  * @author Trung Dong Huynh <tdh@ecs.soton.ac.uk>
  * 
  */
+
 public class DocumentEquality {
 	static Logger logger = Logger.getLogger(DocumentEquality.class);
 	
@@ -48,17 +49,15 @@ public class DocumentEquality {
 	private boolean statementEqual(StatementOrBundle r1,
 			StatementOrBundle r2) {
 		// If one of the statemens is a named bundle
-		if (r1 instanceof NamedBundle || r2 instanceof NamedBundle) {
-			if (r1 instanceof NamedBundle && r2 instanceof NamedBundle) {
-				NamedBundle b1 = (NamedBundle) r1;
-				NamedBundle b2 = (NamedBundle) r2;
-				if (!b1.getId().equals(b2.getId()))
-					return false;
-				List<?> stmts1 = b1.getStatement();
-				List<?> stmts2 = b2.getStatement();
-				return statementListEqual((List<StatementOrBundle>) stmts1,
-						(List<StatementOrBundle>) stmts2);
-			}
+		if (r1 instanceof NamedBundle && r2 instanceof NamedBundle) {
+			NamedBundle b1 = (NamedBundle) r1;
+			NamedBundle b2 = (NamedBundle) r2;
+			if (!b1.getId().equals(b2.getId()))
+				return false;
+			List<?> stmts1 = b1.getStatement();
+			List<?> stmts2 = b2.getStatement();
+			return statementListEqual((List<StatementOrBundle>) stmts1,
+			                          (List<StatementOrBundle>) stmts2);
 		}
 		// Two normal statements
 		Class<?> class1 = r1.getClass();
@@ -68,7 +67,7 @@ public class DocumentEquality {
 		Method[] allMethods = class1.getDeclaredMethods();
 		for (Method m : allMethods) {
 			String methodName = m.getName(); 
-			if (methodName.startsWith("get")) {
+			if (methodName.startsWith("get") && (!methodName.equals("getAll"))) {
 				try {
 					Object attr1 = m.invoke(r1);
 					Object attr2 = m.invoke(r2);
@@ -83,12 +82,17 @@ public class DocumentEquality {
 						if (collectionEqual((Collection<?>) attr1,
 								(Collection<?>) attr2))
 							continue;
-
+					/*
 					// the two attributes are not equal
 					String attrName = methodName.substring(3);
+					System.out.println("The following " + attrName + " attributes are not the same");
+					System.out.println(attr1);
+					System.out.println(attr2);
+
 					logger.debug("The following " + attrName + " attributes are not the same");
 					logger.debug(attr1);
 					logger.debug(attr2);
+					*/
 					return false;
 				} catch (Exception e) {
 					// Any exception means no equality

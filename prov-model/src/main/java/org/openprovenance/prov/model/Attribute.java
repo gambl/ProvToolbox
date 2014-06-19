@@ -1,8 +1,14 @@
 package org.openprovenance.prov.model;
 
-import javax.xml.namespace.QName;
 
-public interface Attribute {
+/** 
+ * <p> Interface for a PROV attribute-value pair.
+ * <p> Attribute-value pairs are meant to provide further descriptions to (most) {@link Statement}.
+ * 
+ * @author lavm
+ *
+ */
+public interface Attribute extends TypedValue {
 
     public enum AttributeKind {
 	PROV_TYPE,
@@ -10,23 +16,38 @@ public interface Attribute {
 	PROV_ROLE,
 	PROV_LOCATION,
 	PROV_VALUE,
+	PROV_KEY,
 	OTHER	
     }
 
-    public abstract QName getQName(AttributeKind kind);
+    public abstract QualifiedName getQualifiedName(AttributeKind kind);
 
-    public abstract AttributeKind getAttributeKind(QName q);
+    public abstract AttributeKind getAttributeKind(QualifiedName q);
 
-    public abstract QName getElementName();
+    public abstract QualifiedName getElementName();
 
     public abstract AttributeKind getKind();
 
+    
+    /** Get the type of an Attribute 
+     * @return  possible object of {@link String}, {@link QualifiedName}, {@link LangString}
+     */
+    
     public abstract Object getValue();
 
-    public abstract QName getXsdType();
+    
+    /** Get the type of an Attribute 
+     * @return  possible instance of  {@link QualifiedName}
+     */
+    
+    public abstract QualifiedName getType();
 
     /** A method to generate the prov-n representation of an attribute  ex:attr="value" %% xsd:type */
 
     public abstract String toNotationString();
+    
+    /** Returns the value of an Attribute as a Java Object. */
+    
+    public Object getConvertedValue();
 
 }
